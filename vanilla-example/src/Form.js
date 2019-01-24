@@ -1,27 +1,22 @@
 import React, { useState, useEffect } from 'react'
+import { Offline, Online } from 'react-detect-offline'
+
+const formStyle = { padding: '2rem 0rem' }
+const inputStyle = { margin: '1rem 0rem' }
 
 const Form = () => {
   const [firstname, setFirstname] = useState('')
   const [lastname, setLastname] = useState('')
-  const [isOnline, setIsOnline] = useState(navigator.onLine)
-
-  useEffect(
-    () => {
-      if (navigator.onLine) setIsOnline(true)
-      else setIsOnline(false)
-    },
-    [navigator.onLine]
-  )
 
   useEffect(() => {
-    let request = window.indexedDB.open('EXAMPLE_DB', 1)
+    let db = window.indexedDB.open('FormDatabase', 1)
 
-    request.onsuccess = function(event) {
+    db.onsuccess = function(event) {
       // get database from event
       let db = event.target.result
 
       // create transaction from database
-      let transaction = db.transaction('data', 'readwrite')
+      let transaction = db.transaction('formData', 'readwrite')
 
       // add success event handleer for transaction
       // you should also add onerror, onabort event handlers
@@ -30,7 +25,7 @@ const Form = () => {
       }
 
       // get store from transaction
-      let dataStore = transaction.objectStore('data')
+      let dataStore = transaction.objectStore('formData')
 
       /*************************************/
 
@@ -47,25 +42,25 @@ const Form = () => {
       }
     }
 
-    request.onerror = function(event) {
-      console.log('[onerror]', request.error)
+    db.onerror = function(event) {
+      console.log('[onerror]', db.error)
     }
 
-    request.onupgradeneeded = function(event) {
+    db.onupgradeneeded = function(event) {
       let db = event.target.result
-      db.createObjectStore('data', { keyPath: 'id' })
+      db.createObjectStore('formData', { keyPath: 'id' })
     }
   }, [])
 
-  const storeName = id => value => {
-    let request = window.indexedDB.open('EXAMPLE_DB', 1)
+  const setName = id => value => {
+    let db = window.indexedDB.open('FormDatabase', 1)
 
-    request.onsuccess = function(event) {
+    db.onsuccess = function(event) {
       // get database from event
       let db = event.target.result
 
       // create transaction from database
-      let transaction = db.transaction('data', 'readwrite')
+      let transaction = db.transaction('formData', 'readwrite')
 
       // add success event handleer for transaction
       // you should also add onerror, onabort event handlers
@@ -74,62 +69,69 @@ const Form = () => {
       }
 
       // get store from transaction
-      let dataStore = transaction.objectStore('data')
+      let dataStore = transaction.objectStore('formData')
 
       dataStore.put({ id, value }).onsuccess = function(event) {
         console.log(
           '[Transaction - PUT] product with id 1',
           event.target.result
         )
-        window.indexedDB.open('EXAMPLE_DB', 1)
+        window.indexedDB.open('FormDatabase', 1)
       }
+
+      if (id === 'firstname') setFirstname(value)
+      if (id === 'lastname') setLastname(value)
     }
 
-    request.onerror = function(event) {
-      console.log('[onerror]', request.error)
+    db.onerror = function(event) {
+      console.log('[onerror]', db.error)
     }
 
-    request.onupgradeneeded = function(event) {
+    db.onupgradeneeded = function(event) {
       let db = event.target.result
-      db.createObjectStore('data', { keyPath: 'id' })
+      db.createObjectStore('formData', { keyPath: 'id' })
     }
   }
 
+  const handleSetName = id => e => setName(id)(e.target.value)
+
+  // when the form is submitted, prevent the default action
+  // which reloads the page and reset the first and last name
   const handleSubmit = e => {
     e.preventDefault()
-    setFirstname('')
-    setLastname('')
-    storeName('firstname')('')
-    storeName('lastname')('')
+    setName('firstname')('')
+    setName('lastname')('')
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form style={formStyle} onSubmit={handleSubmit}>
       <span>First name:</span>
       <br />
       <input
+        style={inputStyle}
         type="text"
         name="firstname"
         value={firstname}
-        onChange={e => setFirstname(e.target.value)}
-        onBlur={e => storeName('firstname')(e.target.value)}
+        onChange={handleSetName('firstname')}
+        // onBlur={e => storeName('firstname')(e.target.value)}
       />
       <br />
       <span>Last name:</span>
       <br />
       <input
+        style={inputStyle}
         type="text"
         name="lastname"
         value={lastname}
-        onChange={e => setLastname(e.target.value)}
-        onBlur={e => storeName('lastname')(e.target.value)}
+        onChange={handleSetName('lastname')}
+        // onBlur={e => storeName('lastname')(e.target.value)}
       />
       <br />
-      {isOnline ? (
+      <Online>
+        {' '}
         <input type="submit" value="Submit" />
-      ) : (
-        'You are currently offline!'
-      )}
+      </Online>
+      <Offline>You are currently offline!</Offline>
     </form>
   )
 }

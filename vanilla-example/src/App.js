@@ -5,7 +5,7 @@ import Form from './Form'
 class App extends Component {
   render() {
     return (
-      <div>
+      <div style={{ margin: '2rem auto', width: '200px' }}>
         <Form />
       </div>
     )

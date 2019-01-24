@@ -8,11 +8,3 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
 }
-
-form {
-  padding: 2rem 0rem;
-}
-
-input {
-  margin: 1rem 0rem;
-}
