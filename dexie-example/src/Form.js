@@ -1,52 +1,64 @@
 import React, { useState, useEffect } from 'react'
 import { Offline, Online } from 'react-detect-offline'
 
+// some inline styling so everything isn't squished
 const formStyle = { padding: '2rem 0rem' }
 const inputStyle = { margin: '1rem 0rem' }
 
+// a simple form with a first name, last name, and submit button
 const Form = ({ db }) => {
-  const [firstname, setFirstname] = useState('')
-  const [lastname, setLastname] = useState('')
+  // store form values in a state hook
+  const [names, setNames] = useState({ firstname: '', lastname: '' })
 
   // set firstname and lastname to whatever is in the database
   // if no values are in the database, set the database values to ''
-  useEffect(() => {
-    db.version(1).stores({ formData: 'id,value' })
+  useEffect(
+    () => {
+      // create the store
+      db.version(1).stores({ formData: 'id,value' })
 
-    db.transaction('rw', db.formData, async () => {
-      // if the first or last name fields have not be added, add them
-      const dbFirstname = await db.formData.get('firstname')
-      const dbLastname = await db.formData.get('lastname')
-      if (!dbFirstname) {
-        await db.formData.add({ id: 'firstname', value: '' })
-      } else {
-        setFirstname(dbFirstname.value)
-      }
-      if (!dbLastname) {
-        await db.formData.add({ id: 'lastname', value: '' })
-      } else {
-        setLastname(dbLastname.value)
-      }
-    }).catch(e => {
-      console.log(e.stack || e)
-    })
+      // perform a read/write transatiction on the new store
+      db.transaction('rw', db.formData, async () => {
+        // get the first and last name from the data
+        const dbFirstname = await db.formData.get('firstname')
+        const dbLastname = await db.formData.get('lastname')
 
-    // close the database connection if form is unmounted
-    return () => db.close()
-  }, [])
+        // if the first or last name fields have not be added, add them
+        if (!dbFirstname) await db.formData.add({ id: 'firstname', value: '' })
+        if (!dbLastname) await db.formData.add({ id: 'lastname', value: '' })
 
+        // set the initial values
+        setNames({
+          firstname: dbFirstname ? dbFirstname.value : '',
+          lastname: dbLastname ? dbLastname.value : ''
+        })
+      }).catch(e => {
+        // log any errors
+        console.log(e.stack || e)
+      })
+
+      // close the database connection if form is unmounted or the
+      // database connection changes
+      return () => db.close()
+    },
+    // run effect whenever the database connection changes
+    [db]
+  )
+
+  // sets the name in the store and in the state hook
   const setName = id => value => {
-    // update the database
+    // update the store
     db.formData.put({ id, value })
-    // update the internal state
-    if (id === 'firstname') setFirstname(value)
-    if (id === 'lastname') setLastname(value)
+    // update the state hook
+    setNames(prevNames => ({ ...prevNames, [id]: value }))
   }
 
+  // partial application to make on change handler easier to deal with
   const handleSetName = id => e => setName(id)(e.target.value)
 
   // when the form is submitted, prevent the default action
   // which reloads the page and reset the first and last name
+  // in both the store and in the state hook
   const handleSubmit = e => {
     e.preventDefault()
     setName('firstname')('')
@@ -61,7 +73,7 @@ const Form = ({ db }) => {
         style={inputStyle}
         type="text"
         name="firstname"
-        value={firstname}
+        value={names.firstname}
         onChange={handleSetName('firstname')}
       />
       <br />
@@ -71,12 +83,12 @@ const Form = ({ db }) => {
         style={inputStyle}
         type="text"
         name="lastname"
-        value={lastname}
+        value={names.lastname}
         onChange={handleSetName('lastname')}
       />
       <br />
+      {/* Handle whether or not the user is offline */}
       <Online>
-        {' '}
         <input type="submit" value="Submit" />
       </Online>
       <Offline>You are currently offline!</Offline>
