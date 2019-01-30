@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { Offline, Online } from 'react-detect-offline'
 
 // some inline styling so everything isn't squished
@@ -46,24 +46,32 @@ const Form = ({ db }) => {
   )
 
   // sets the name in the store and in the state hook
-  const setName = id => value => {
-    // update the store
-    db.formData.put({ id, value })
-    // update the state hook
-    setNames(prevNames => ({ ...prevNames, [id]: value }))
-  }
+  const setName = useCallback(
+    id => value => {
+      // update the store
+      db.formData.put({ id, value })
+      // update the state hook
+      setNames(prevNames => ({ ...prevNames, [id]: value }))
+    },
+    [db]
+  )
 
   // partial application to make on change handler easier to deal with
-  const handleSetName = id => e => setName(id)(e.target.value)
+  const handleSetName = useCallback(id => e => setName(id)(e.target.value), [
+    db
+  ])
 
   // when the form is submitted, prevent the default action
   // which reloads the page and reset the first and last name
   // in both the store and in the state hook
-  const handleSubmit = e => {
-    e.preventDefault()
-    setName('firstname')('')
-    setName('lastname')('')
-  }
+  const handleSubmit = useCallback(
+    e => {
+      e.preventDefault()
+      setName('firstname')('')
+      setName('lastname')('')
+    },
+    [db]
+  )
 
   return (
     <form style={formStyle} onSubmit={handleSubmit}>
