@@ -4,7 +4,7 @@
   "private": true,
   "homepage": "https://brookslybrand.github.io/react-indexeddb-example",
   "dependencies": {
-    "dexie": "^2.0.4",
+    "dexie": "^3.2.2",
     "react": "^16.8.6",
     "react-detect-offline": "^2.4.0",
     "react-dom": "^16.8.6",
